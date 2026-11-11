@@ -198,10 +198,25 @@ class PainReport(BaseModel):
         return self.changed_stride or self.score >= 4
 
 
+class Move(BaseModel):
+    """A change the runner made in their calendar app: a new day and time, or a removed event."""
+
+    date: dt.date | None = None   # None = the runner removed the event
+    time: str | None = None       # "HH:MM", or None to keep the plan's time
+
+    @property
+    def removed(self) -> bool:
+        return self.date is None
+
+
 class BlockEvent(BaseModel):
     date: dt.date
     block: Block
     skipped_reason: str | None = None
+
+    @property
+    def key(self) -> str:
+        return f"block-{self.block.name}-{self.date.isoformat()}"
 
 
 def slot_index(slot: str) -> int:

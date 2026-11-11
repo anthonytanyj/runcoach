@@ -169,7 +169,7 @@ class Coach:
         today = today or dt.date.today()
         st = self.store.state
         changes = st.changes if changes is None else changes
-        items = schedule(self.plan, changes, not_before=today)
+        items = schedule(self.plan, changes, not_before=today, moves=st.moves)
         items = adapt(self.plan, items, st.metrics, st.activities, changes, st.feelings, self.rules,
                       pains=st.pains, overrides=st.overrides)
         return mark_status(items, st.activities, today)

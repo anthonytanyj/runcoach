@@ -185,8 +185,9 @@ def create_app(coach_factory) -> FastAPI:
             elif what == "google":
                 s = dt.date.today()
                 e = s + dt.timedelta(days=27)
-                r = calendar_out.GoogleCalendarSync().sync(calendar_out.events(c, s, e), s, e)
-                msg = f"Google Calendar: {r['created']} added, {r['updated']} changed, {r['deleted']} removed."
+                r = calendar_out.GoogleCalendarSync().sync(c, s, e, s)
+                msg = " ".join(r["your_moves"]) + (" " if r["your_moves"] else "") + (
+                    f"Google Calendar: {r['created']} added, {r['updated']} changed, {r['deleted']} removed.")
             else:
                 raise HTTPException(404)
         except HTTPException:

@@ -44,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("mcp", help="run the MCP server (stdio)")
     sg = sub.add_parser("sync-garmin", help="read recent data from Garmin")
     sg.add_argument("--days", type=int, default=14)
-    sc = sub.add_parser("sync-google", help="write the Training calendar in Google")
+    sc = sub.add_parser("sync-google", help="two-way sync with the Training calendar in Google")
     sc.add_argument("--days", type=int, default=28)
 
     args = p.parse_args(argv)
@@ -106,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
         print(sync(c.store, args.days, today))
     elif args.cmd == "sync-google":
         e = today + dt.timedelta(days=args.days - 1)
-        print(calendar_out.GoogleCalendarSync().sync(calendar_out.events(c, today, e, today), today, e))
+        print(calendar_out.GoogleCalendarSync().sync(c, today, e, today))
     return 0
 
 

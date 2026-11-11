@@ -72,7 +72,7 @@ RULES: dict[str, Rule] = {r.id: r for r in [
          "A hike with lots of climbing tires your legs like a run does.",
          "choice", "Research summary, section 4.2: count other exercise in your total training"),
     Rule("you_chose", "Your choice",
-         "You chose to keep the run as planned. You stay in control.",
+         "You made this choice, for example you kept the planned run or moved it in your calendar. You stay in control.",
          "consensus", "Research summary, section 6: keep the runner in control"),
     Rule("life_moves", "Your plan moves with your life",
          "A busy day moved this run. Important runs are kept first.",

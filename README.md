@@ -99,7 +99,7 @@ To use it on your phone, run it on a computer that stays on, and reach that comp
 }
 ```
 
-The server has these tools: `today`, `week`, `check_in`, `log_pain`, `keep_original_run`, `propose_paces`, `accept_paces`, `rule_book`, `preview_change`, `apply_change`, `undo_last_change`, `log_metrics`, `log_activity`, `log_feeling`, `calendar_events`, `sync_google_calendar`, and `sync_garmin`. Its instructions tell the assistant how to do the morning check. To make it ambient, add a daily scheduled task to your assistant at about 06:00. The task text can be: *"Do the runcoach morning check."*
+The server has these tools: `today`, `week`, `check_in`, `log_pain`, `keep_original_run`, `propose_paces`, `accept_paces`, `rule_book`, `preview_change`, `apply_change`, `undo_last_change`, `log_metrics`, `log_activity`, `log_feeling`, `calendar_events`, `calendar_moved`, `back_to_plan`, `sync_google_calendar`, and `sync_garmin`. Its instructions tell the assistant how to do the morning check. To make it ambient, add a daily scheduled task to your assistant at about 06:00. The task text can be: *"Do the runcoach morning check."*
 
 If your assistant already has Garmin and Google Calendar connectors, you do not need to set up anything else here. The assistant reads Garmin, sends the data with `log_metrics` and `log_activity`, and writes the result of `calendar_events` to your calendar.
 
@@ -117,9 +117,22 @@ More sources are planned: FIT file import, Intervals.icu, Apple Health, and Heal
 
 | Way | How |
 | --- | --- |
-| Your assistant's calendar connector | `calendar_events` (MCP). Each event has a stable `id` and `key`, so a moved run updates the same event. |
-| Google Calendar, direct | `pip install -e ".[google]"`. Create an OAuth "Desktop app" client in Google Cloud and enable the Calendar API. Save the client file as `~/.runcoach/credentials.json`, then run `runcoach sync-google`. It writes only to a calendar named **Training**, and it only changes the events that it made. |
+| Your assistant's calendar connector | `calendar_events` (MCP). Each event has a stable `id` and `key`, so a moved run updates the same event. If you move a run in your calendar, the assistant reports it with `calendar_moved`. |
+| Google Calendar, direct | `pip install -e ".[google]"`. Create an OAuth "Desktop app" client in Google Cloud and enable the Calendar API. Save the client file as `~/.runcoach/credentials.json`, then run `runcoach sync-google`. It writes only to a calendar named **Training**, and it only changes the events that it made. The sync is two-way (see below). |
 | Any calendar app | `runcoach ics` or the `/calendar.ics` feed. Google refreshes feeds only every 12–24 h. |
+
+### Move a run in your calendar
+
+The calendar sync is two-way. If you drag a run to another day or time in the
+Training calendar, runcoach keeps your choice at the next sync. It places the
+other runs of that week around it and tells you if two hard days are now next
+to each other. If you delete a run, it is dropped, and the km are not made up.
+A life change that blocks the new day still wins. To put a run back, use Undo
+(web app or `undo_last_change`) or `back_to_plan`.
+
+How it works: runcoach saves the start time it wrote in each event. If the event
+now starts at another time, you moved it. A deleted event that runcoach did not
+delete itself means that you removed it. The `.ics` feed is one-way only.
 
 ## Plan format
 

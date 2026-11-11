@@ -17,6 +17,10 @@ Soft rules (relaxed only if nothing else fits):
   * No hard session on the day after a leg-strength session.
   * A run that must move does not go to a leg-strength day or the day after one.
 
+Your own calendar moves come first: if you moved a run in your calendar app,
+it stays on the day you chose (unless a life change now blocks that day), and
+the other runs are placed around it. If you removed it, it is dropped.
+
 If a session does not fit anywhere, it is dropped (lowest priority goes first,
 because the most important sessions are placed first). The race never moves.
 """
@@ -32,6 +36,7 @@ from .models import (
     BlockEvent,
     ChangeKind,
     LifeChange,
+    Move,
     Plan,
     Scheduled,
     Session,
@@ -142,19 +147,48 @@ def schedule(
     plan: Plan,
     changes: list[LifeChange] | None = None,
     not_before: dt.date | None = None,
+    moves: dict[str, Move] | None = None,
 ) -> list[Scheduled]:
     """Schedule every week of the plan. Returns sessions sorted by date."""
     changes = changes or []
+    moves = moves or {}
     board = _Board()
     result: list[Scheduled] = []
 
     for week in plan.weeks:
         start = plan.week_start(week.n)
         leg_days = _leg_days(block_events(plan, week.n, changes))
-        order = sorted(week.sessions, key=lambda s: (s.priority, slot_index(s.slot)))
+        def _key(s: Session) -> str:
+            return f"w{week.n}-{s.slot}-{s.type}"
+
+        # Runs the runner moved in their calendar go first, then the rest by priority.
+        order = sorted(week.sessions, key=lambda s: (_key(s) not in moves, s.priority, slot_index(s.slot)))
         for s in order:
             preferred = start + dt.timedelta(days=slot_index(s.slot))
             item = Scheduled(date=preferred, week=week.n, session=s, original_date=preferred)
+
+            mv = moves.get(_key(s))
+            if mv is not None and s.type != "race":
+                if mv.removed:
+                    item.status = "dropped"
+                    item.adjustments.append(Adjustment(
+                        kind="dropped", rule="you_chose",
+                        reason="You removed this run from your calendar. Lost km are not made up."))
+                    result.append(item)
+                    continue
+                if not _blocking(changes, mv.date):
+                    if s.hard and board.hard_near(mv.date):
+                        item.adjustments.append(Adjustment(
+                            kind="note", rule="rest_between_hard",
+                            reason="This hard run is now next to another hard day. Go gently if your legs feel tired."))
+                    board.runs[mv.date] = s.hard
+                    item.date = mv.date
+                    if mv.date != preferred:
+                        item.adjustments.append(Adjustment(
+                            kind="moved", rule="you_chose",
+                            reason=f"You moved this run in your calendar from {preferred:%a %-d %b}."))
+                    result.append(item)
+                    continue
 
             if s.type == "race":
                 board.runs[preferred] = True
