@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}How the coach decides{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1 class="heading-4 hero-title">How the coach decides</h1>
+  <p class="body-6 muted">Every change to your plan comes from one of these rules. We say how sure we are about each one, and where the idea comes from.</p>
+</header>
+<div class="card list-card"><ul class="rows rules">
+{% for r in all_rules %}
+  <li id="{{ r.id }}"><span class="what"><span class="main title-4">{{ r.name }}</span><span class="body-6">{{ r.why }}</span><span class="caption-5 muted">{{ r.level_text }} · {{ r.source }}</span></span></li>
+{% endfor %}
+</ul></div>
+<p class="caption-5 muted">We do not use "never add more than 10% a week" or load ratios to predict injury. Studies of everyday runners found they do not predict injury well. We still build up slowly, as a careful default.</p>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% set p = pace(s.session.pace) %}
+{% set rest = s.status == 'rest' %}
+<article class="card" aria-label="{{ title(s) }}">
+  <div class="page-head">
+    <span class="tag caption-3 {{ 'rest' if rest else s.session.type }}">{% if rest %}Rest day{% else %}{{ {'easy':'Easy run','long':'Long run','workout':'Workout','test':'Test','race':'Race'}[s.session.type] }}{% endif %}{% if s.status == 'done' %} · done{% endif %}</span>
+    <h2 class="heading-6">{% if rest %}Rest today{% else %}{{ short(s) }}{% endif %}</h2>
+    {% if not rest %}<p class="body-6 muted">{{ feel(s.session.pace) }}</p>{% endif %}
+  </div>
+  {% if not rest %}
+  <div class="stats">
+    <div class="stat"><span class="title-2">{{ '%g' % s.session.km }} km</span><span class="sub caption-5">{{ '%.1f' % mi(s.session.km) }} miles</span></div>
+    <div class="stat"><span class="title-2">{{ minutes_words(mins(s))|replace('About ', '') }}</span><span class="sub caption-5">about</span></div>
+    <div class="stat"><span class="title-2">{{ p.km|replace('/km', '') }}</span><span class="sub caption-5">minutes per km</span></div>
+    {% set hr = (p.hr or '').replace('about ', '').split(', stay under ') %}
+    <div class="stat"><span class="title-2">{{ hr[0] or 'By feel' }}</span><span class="sub caption-5">heart rate{% if hr|length > 1 %}, stay under {{ hr[1] }}{% endif %}</span></div>
+  </div>
+  <p class="caption-2 muted">In miles: {{ p.mi|replace('/mi', '') }} per mile. On a treadmill: {{ p.kmh }} ({{ p.mph }}).</p>
+  {% if s.session.detail %}<p class="body-6">{{ s.session.detail }}</p>{% endif %}
+  {% endif %}
+  {% for a in s.adjustments %}{% set r = rules.get(a.rule) %}
+  <div class="why {{ 'ask' if a.kind == 'ask' else '' }}">
+    <svg class="icon" aria-hidden="true"><use href="/static/icons.svg#{{ 'info' if a.kind != 'no_run' else 'warning' }}"/></svg>
+    <div class="why-body">
+      <p class="body-6">{{ a.reason }}</p>
+      {% if r %}<p class="caption-5 why-rule">{{ r.name }} · <a href="/rules#{{ r.id }}">How sure we are: {{ r.level_text }}</a></p>{% endif %}
+      {% if a.kind == 'ask' %}
+      <form method="post" action="/feel" class="row">
+        <input type="hidden" name="day" value="{{ s.date.isoformat() }}"><input type="hidden" name="d" value="{{ q }}">
+        <button class="btn sm" name="ready" value="fine">I feel fine</button>
+        <button class="btn sm" name="ready" value="tired">I feel tired</button>
+      </form>
+      {% elif a.kind in ('easier',) and a.rule not in ('pain_mild',) %}
+      <form method="post" action="/keep"><input type="hidden" name="day" value="{{ s.date.isoformat() }}"><input type="hidden" name="key" value="{{ s.key }}"><input type="hidden" name="d" value="{{ q }}">
+        <button class="btn sm">Keep the original run</button></form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</article>

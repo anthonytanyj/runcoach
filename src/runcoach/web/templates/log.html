@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Log{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1 class="heading-4 hero-title">Log</h1>
+  <p class="body-6 muted">What changed, and the data the coach used.</p>
+</header>
+{% if applied %}<p class="notice ok body-6" role="status"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#check-circle"/></svg><span>Change applied. Your calendar updates on the next sync.</span></p>{% endif %}
+{% if msg %}<p class="notice {{ 'err' if 'failed' in msg else 'ok' }} body-6" role="status"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#{{ 'warning-circle' if 'failed' in msg else 'check-circle' }}"/></svg><span>{{ msg }}</span></p>{% endif %}
+
+<div class="actions">
+  <form method="post" action="/undo"><input type="hidden" name="d" value="{{ q }}"><button class="btn sm"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#arrow-counter-clockwise"/></svg>Undo last change</button></form>
+  <a class="btn sm" href="/calendar.ics"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#calendar-plus"/></svg>Calendar feed</a>
+  <form method="post" action="/sync/garmin"><button class="btn sm"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#watch"/></svg>Sync Garmin</button></form>
+  <form method="post" action="/sync/google"><button class="btn sm"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#google-logo"/></svg>Sync Google</button></form>
+</div>
+
+{% macro block(id, heading, icon, empty_text) %}
+<section class="section" aria-labelledby="{{ id }}">
+  <h2 id="{{ id }}" class="heading-6">{{ heading }}</h2>
+  <div class="card" style="gap:0;padding-top:var(--s-50);padding-bottom:var(--s-50)">{{ caller() }}</div>
+</section>
+{% endmacro %}
+
+{% call block('changes', 'Life changes', '', '') %}
+<ul class="rows">{% for c in changes %}<li><span class="when body-6">{{ c.start.strftime('%-d %b') }}{% if c.end != c.start %} to {{ c.end.strftime('%-d %b') }}{% endif %}</span><span class="what body-5">{{ {'away':'Away','busy':'Busy','treadmill':'Treadmill only','ill':'Sick'}[c.kind.value] }}{% if c.note %} · {{ c.note }}{% endif %}</span><span></span></li>
+{% else %}<li><span class="when"></span><span class="empty body-6" style="padding:var(--s-75) 0"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#calendar-check"/></svg><span>No changes yet. Your plan runs as written.</span></span><span></span></li>{% endfor %}</ul>
+{% endcall %}
+
+{% call block('history', 'History', '', '') %}
+<ul class="rows">{% for e in log %}<li class="{{ 'dropped' if e.undone }}"><span class="when body-6">{{ e.at.strftime('%-d %b %H:%M') }}</span><span class="what"><span class="main body-6">{{ e.summary }}</span></span><span class="end caption-5">{{ 'Undone' if e.undone }}</span></li>
+{% else %}<li><span class="when"></span><span class="empty body-6" style="padding:var(--s-75) 0"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#clock"/></svg><span>Nothing here yet.</span></span><span></span></li>{% endfor %}</ul>
+{% endcall %}
+
+{% call block('body', 'Body data', '', '') %}
+<ul class="rows">{% for m in metrics %}<li><span class="when body-6">{{ m.date.strftime('%a %-d %b') }}</span><span class="what body-6">Readiness {{ m.readiness|int if m.readiness is not none else 'n/a' }} · RHR {{ m.rhr|int if m.rhr is not none else 'n/a' }} · HRV {{ m.hrv|int if m.hrv is not none else 'n/a' }}</span><span class="end caption-5">{{ ('%s h' % m.sleep_hours) if m.sleep_hours is not none else '' }}</span></li>
+{% else %}<li><span class="when"></span><span class="empty body-6" style="padding:var(--s-75) 0"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#heartbeat"/></svg><span>No body data yet. Sync Garmin, or let your assistant send it each morning.</span></span><span></span></li>{% endfor %}</ul>
+{% endcall %}
+
+{% call block('acts', 'Activities', '', '') %}
+<ul class="rows">{% for a in activities %}<li><span class="when body-6">{{ a.date.strftime('%a %-d %b') }}</span><span class="what body-6">{{ a.type.replace('_', ' ')|capitalize }}{% if a.km %} · {{ a.km }} km{% endif %}{% if a.ascent_m %} · {{ a.ascent_m|int }} m up{% endif %}</span><span class="end caption-5">{{ ('HR %d' % a.avg_hr) if a.avg_hr else '' }}</span></li>
+{% else %}<li><span class="when"></span><span class="empty body-6" style="padding:var(--s-75) 0"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#person-simple-run"/></svg><span>No activities yet.</span></span><span></span></li>{% endfor %}</ul>
+{% endcall %}
+{% endblock %}

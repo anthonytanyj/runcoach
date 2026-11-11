@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="runcoach: your training plan, moved around your life.">
+<meta name="theme-color" content="#0F766E">
+<link rel="manifest" href="/static/manifest.json">
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/static/style.css">
+<title>{% block title %}runcoach{% endblock %} · runcoach</title>
+</head>
+<body>
+<a class="skip button-sm" href="#main">Skip to content</a>
+{% set qs = ('?d=' ~ q) if q else '' %}
+<nav class="nav" aria-label="Main">
+  <div class="nav-bar">
+    <a class="title-4" href="/{{ qs }}" {% if page=='today' %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#sneaker-move"/></svg>Today</a>
+    <a class="title-4" href="/plan{{ qs }}" {% if page=='plan' %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#calendar-dots"/></svg>Plan</a>
+    <a class="title-4" href="/change{{ qs }}" {% if page=='change' %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#arrows-left-right"/></svg>Change</a>
+    <a class="title-4" href="/log{{ qs }}" {% if page=='log' %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#clock-counter-clockwise"/></svg>Log</a>
+  </div>
+</nav>
+<main id="main">
+{% block body %}{% endblock %}
+</main>
+<footer class="caption-5">Not medical advice. If you feel sick or have pain, do not run. <a href="/rules">How the coach decides</a></footer>
+</body>
+</html>

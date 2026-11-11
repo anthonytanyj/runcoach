@@ -1,0 +1,76 @@
+# runcoach open plan format, version 1
+#
+# SAMPLE PLAN. This is an example for a recreational runner, not a real person.
+# Copy it to ~/.runcoach/plan.yaml and change the race, dates, paces, and
+# athlete settings to your own. Keep your own plan out of git.
+#
+# A plan is a list of weeks. Each week has sessions in "slots" (mon..sun).
+# The scheduler puts each session on its slot day if it can. If your life
+# blocks that day, it moves the session or drops the lowest-priority one.
+#
+# Session types and priority (low number = keep first):
+#   race 0 (never moves) | long 1 | workout 2 | test 2 | easy 3
+# Pace keys refer to the "paces" table below.
+
+format: runcoach-plan/1
+name: Sample half marathon (24 weeks)
+race:
+  name: Spring Half Marathon
+  date: 2027-04-25
+  goal: "2:15:00"           # example goal
+start: 2026-11-09          # Monday of week 1
+
+athlete:
+  run_time: "07:00"        # usual start time for weekday runs
+  long_run_time: "08:00"   # usual start time for long runs and races
+  timezone: UTC
+  hrv_baseline: 55           # example: set to your own watch average
+  rhr_normal: [50, 55]       # example: your normal resting heart rate range
+  easy_hr: [135, 145]
+  easy_hr_cap: 150
+
+# Fixed non-run training. Shown on the calendar, and the scheduler keeps
+# hard runs off the day after a leg session.
+blocks:
+  - name: Strength training
+    days: [mon, thu]
+    legs: true
+    time: "18:00"
+    minutes: 45
+    until: 2027-04-15      # last light lift before the race
+
+paces:
+  E:   {name: Easy,          min_per_km: ["7:00", "7:30"], hr: "135–145, stay under 150"}
+  HMP: {name: Half pace,     min_per_km: ["6:24"],         hr: "about 160–168"}
+  T:   {name: Tempo,         min_per_km: ["5:55"],         hr: "about 165–175"}
+  I:   {name: Intervals,     min_per_km: ["5:25"]}
+
+warmup: "3 min walk + 10 min easy"
+cooldown: "5–10 min easy"
+strides: "20 s fast and relaxed, 40 s walk"
+
+weeks:
+  - {n: 1, sessions: [{slot: thu, type: easy, km: 8, detail: "60 min easy (about 8 km)"}, {slot: sun, type: long, km: 5}]}
+  - {n: 2, sessions: [{slot: wed, type: easy, km: 5, strides: 4}, {slot: sun, type: long, km: 8}]}
+  - {n: 3, sessions: [{slot: wed, type: easy, km: 5, strides: 4}, {slot: sun, type: long, km: 9}]}
+  - {n: 4, sessions: [{slot: wed, type: easy, km: 6, strides: 6}, {slot: sun, type: long, km: 10}]}
+  - {n: 5, note: easy week, sessions: [{slot: wed, type: easy, km: 5}, {slot: sun, type: long, km: 7}]}
+  - {n: 6, sessions: [{slot: wed, type: easy, km: 6, strides: 6}, {slot: sat, type: easy, km: 3, optional: true}, {slot: sun, type: long, km: 11}]}
+  - {n: 7, sessions: [{slot: wed, type: easy, km: 6, strides: 6}, {slot: sat, type: easy, km: 3, optional: true}, {slot: sun, type: long, km: 12}]}
+  - {n: 8, sessions: [{slot: wed, type: test, km: 8, pace: I, title: "5K test", detail: "2 km easy, 5 km all out, 1 km easy"}, {slot: sat, type: easy, km: 4}, {slot: sun, type: long, km: 8}]}
+  - {n: 9, sessions: [{slot: wed, type: workout, km: 6, pace: T, detail: "4 x 3 min tempo / 2 min jog"}, {slot: sat, type: easy, km: 4}, {slot: sun, type: long, km: 12}]}
+  - {n: 10, sessions: [{slot: wed, type: workout, km: 7, pace: T, detail: "3 x 5 min tempo / 2 min jog"}, {slot: sat, type: easy, km: 5}, {slot: sun, type: long, km: 13}]}
+  - {n: 11, sessions: [{slot: wed, type: workout, km: 7, pace: HMP, detail: "20 min at half pace"}, {slot: sat, type: easy, km: 5, strides: 4}, {slot: sun, type: long, km: 14}]}
+  - {n: 12, note: easy week, sessions: [{slot: wed, type: easy, km: 5, strides: 6}, {slot: sat, type: easy, km: 4}, {slot: sun, type: long, km: 10}]}
+  - {n: 13, sessions: [{slot: wed, type: workout, km: 8, pace: I, detail: "6 x 2 min intervals / 2 min jog"}, {slot: sat, type: easy, km: 5}, {slot: sun, type: long, km: 15}]}
+  - {n: 14, note: fuel practice from here, sessions: [{slot: wed, type: workout, km: 8, pace: T, detail: "2 x 12 min tempo / 3 min jog"}, {slot: sat, type: easy, km: 5}, {slot: sun, type: long, km: 16, detail: "last 3 km at half pace"}]}
+  - {n: 15, sessions: [{slot: wed, type: workout, km: 9, pace: HMP, detail: "30 min at half pace"}, {slot: sat, type: easy, km: 5}, {slot: sun, type: long, km: 17}]}
+  - {n: 16, sessions: [{slot: wed, type: workout, km: 6, pace: HMP, detail: "3 x 3 min at half pace"}, {slot: sat, type: easy, km: 3, strides: 4}, {slot: sun, type: race, km: 21.1, pace: HMP, title: "Tune-up half (rehearsal)", detail: "km 1–5 easy, km 6–18 half pace, km 19–21 by feel"}]}
+  - {n: 17, note: recovery week, sessions: [{slot: wed, type: easy, km: 5}, {slot: sat, type: easy, km: 4}, {slot: sun, type: long, km: 10}]}
+  - {n: 18, sessions: [{slot: wed, type: workout, km: 8, pace: T, detail: "3 x 8 min tempo / 2 min jog"}, {slot: sat, type: easy, km: 5}, {slot: sun, type: long, km: 16}]}
+  - {n: 19, sessions: [{slot: wed, type: workout, km: 9, pace: I, detail: "5 x 1 km intervals / 2 min jog"}, {slot: sat, type: easy, km: 5}, {slot: sun, type: long, km: 18, detail: "last 5 km at half pace"}]}
+  - {n: 20, note: peak week, sessions: [{slot: wed, type: workout, km: 9, pace: T, detail: "2 x 15 min tempo / 3 min jog"}, {slot: sat, type: easy, km: 6}, {slot: sun, type: long, km: 19}]}
+  - {n: 21, note: easy week, sessions: [{slot: wed, type: easy, km: 6, strides: 6}, {slot: sat, type: easy, km: 4}, {slot: sun, type: long, km: 13}]}
+  - {n: 22, sessions: [{slot: wed, type: workout, km: 9, pace: HMP, detail: "3 x 2 km at half pace / 2 min jog"}, {slot: sat, type: easy, km: 5}, {slot: sun, type: long, km: 16, detail: "8 km at half pace in the middle"}]}
+  - {n: 23, note: taper, sessions: [{slot: wed, type: workout, km: 7, pace: T, detail: "3 x 6 min tempo / 2 min jog"}, {slot: sat, type: easy, km: 4}, {slot: sun, type: long, km: 12}]}
+  - {n: 24, note: race week, sessions: [{slot: wed, type: workout, km: 5, pace: HMP, detail: "3 x 1 km at half pace"}, {slot: sat, type: easy, km: 3, strides: 4}, {slot: sun, type: race, km: 21.1, pace: HMP, title: "Spring Half Marathon race"}]}

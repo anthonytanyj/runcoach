@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Today{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1 class="heading-4 hero-title">{{ today.strftime('%A %-d %B') }}</h1>
+  <p class="caption-2 muted">{% if t.week %}Week {{ t.week }} of {{ plan.weeks|length }} · {% endif %}{{ days_to_race }} days to race day</p>
+</header>
+
+{% set rc = t.recovery %}
+<section class="card recovery {{ rc.state }}" aria-labelledby="rec">
+  <div class="page-head">
+    <span class="tag caption-3 state-{{ rc.state }}">Recovery</span>
+    <h2 id="rec" class="title-2">{{ rc.headline }}</h2>
+  </div>
+  <ul class="plain body-6">{% for line in rc.lines %}<li>{{ line }}</li>{% endfor %}</ul>
+  {% if rc.numbers %}
+  <details class="numbers"><summary class="caption-2">Show the numbers</summary>
+    <dl class="caption-2">{% for k, v in rc.numbers %}<div><dt class="muted">{{ k }}</dt><dd>{{ v }}</dd></div>{% endfor %}</dl>
+  </details>
+  {% endif %}
+</section>
+
+{% for s in t.runs %}{% include "_run.html" %}{% else %}
+<article class="card">
+  <span class="tag caption-3 rest">Rest day</span>
+  <h2 class="heading-6">No run today</h2>
+  {% for b in t.lifts %}<p class="body-6 muted">{{ b.block.name }} at {{ b.block.time }}</p>{% else %}<p class="body-6 muted">Sleep well, eat well, and go for a walk if you want to move.</p>{% endfor %}
+</article>
+{% endfor %}
+{% if t.runs and t.lifts %}<p class="body-6 muted">Also today: {% for b in t.lifts %}{{ b.block.name }} at {{ b.block.time }}{% endfor %}</p>{% endif %}
+
+<form method="post" action="/feel" class="card" aria-label="How did it go">
+  <input type="hidden" name="day" value="{{ today.isoformat() }}"><input type="hidden" name="d" value="{{ q }}">
+  <div class="page-head">
+    <h2 class="title-3">After your run: how did it go?</h2>
+    <p class="caption-2 muted">This helps the coach plan the next days.</p>
+  </div>
+  <fieldset class="field bare">
+    <legend class="caption-2 muted">Your legs</legend>
+    <div class="seg">
+      {% for v, label in [('fresh', 'Fresh'), ('ok', 'Okay'), ('heavy', 'Heavy')] %}<label><input type="radio" name="legs" value="{{ v }}" {{ 'checked' if t.feeling.legs == v }}><span class="body-5">{{ label }}</span></label>{% endfor %}
+    </div>
+  </fieldset>
+  <label class="field"><span class="caption-2">How hard did it feel?</span>
+    <select name="effort"><option value="">Choose</option>
+      {% for i, label in [(2, 'Very easy'), (3, 'Easy'), (5, 'Moderate'), (7, 'Hard'), (9, 'Very hard'), (10, 'All out')] %}<option value="{{ i }}" {{ 'selected' if t.feeling.effort == i }}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  <button class="btn">Save</button>
+</form>
+
+<details class="card pain" {{ 'open' if t.pain_today }}>
+  <summary class="title-3">Any pain or niggles?</summary>
+  <form method="post" action="/pain" class="stack">
+    <input type="hidden" name="day" value="{{ today.isoformat() }}"><input type="hidden" name="d" value="{{ q }}">
+    <label class="field"><span class="caption-2">Where?</span><input name="where" placeholder="Left knee, right calf…" value="{{ t.pain_today.where if t.pain_today else '' }}"></label>
+    <label class="field"><span class="caption-2">How bad is it?</span>
+      <select name="score">
+        {% for i, label in [(0, 'No pain'), (2, 'A little: I notice it'), (4, 'Clear: it bothers me'), (6, 'Bad: hard to ignore'), (8, 'Very bad')] %}<option value="{{ i }}" {{ 'selected' if t.pain_today and t.pain_today.score == i }}>{{ label }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="check body-6"><input type="checkbox" name="changed_stride" value="true" {{ 'checked' if t.pain_today and t.pain_today.changed_stride }}> It changes how I run or walk</label>
+    <button class="btn">Save</button>
+    <p class="caption-5 muted">The coach does not diagnose. For pain that stays or gets worse, see a physio or doctor.</p>
+  </form>
+</details>
+
+<section class="section" aria-labelledby="next">
+  <h2 id="next" class="heading-6">Coming up</h2>
+  <div class="card list-card"><ul class="rows">
+  {% for s in t.next %}
+    <li><span class="when body-6">{{ s.date.strftime('%a %-d %b') }}</span>
+      <span class="what"><span class="main body-5">{{ short(s) }}</span>{% if s.adjustments %}<span class="note caption-5">Changed</span>{% endif %}</span>
+      <span class="end caption-5">{{ feel(s.session.pace).split(':')[0] }}</span></li>
+  {% else %}<li><span class="when"></span><span class="what body-6 muted">No more runs. Good luck on race day.</span><span></span></li>{% endfor %}
+  </ul></div>
+</section>
+{% endblock %}

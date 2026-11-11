@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Change{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1 class="heading-4 hero-title">Something changed?</h1>
+  <p class="body-6 muted">Tell the coach about a trip, a busy day, or an illness. You see the plan before and after. Nothing changes until you tap Apply.</p>
+</header>
+{% if error %}<p class="notice err body-6" role="alert"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#warning-circle"/></svg><span>{{ error }}</span></p>{% endif %}
+<form method="post" action="/change" class="card">
+  <input type="hidden" name="d" value="{{ q }}">
+  <div class="row">
+    <label class="field"><span class="caption-2">From</span><input type="date" name="start" required value="{{ form.start if form else today.isoformat() }}"></label>
+    <label class="field"><span class="caption-2">To</span><input type="date" name="end" value="{{ form.end if form else '' }}"></label>
+  </div>
+  <label class="field"><span class="caption-2">What happens</span>
+    <select name="kind">
+      {% for k in kinds %}<option value="{{ k.value }}" {{ 'selected' if form and form.kind == k.value }}>{{ {'away':'Away or trip, no runs','busy':'Busy day, no run','treadmill':'Treadmill only','ill':'Sick'}[k.value] }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="field"><span class="caption-2">Note</span><input name="note" placeholder="Work trip to Chicago, hotel has a gym" value="{{ form.note if form else '' }}"></label>
+  <label class="check body-6"><input type="checkbox" name="lifts_ok" value="true" {{ 'checked' if form and form.lifts_ok }}> I can still do my strength sessions</label>
+  {% if diff %}
+    <div class="diff" aria-live="polite">
+      <h2 class="title-3">Before and after</h2>
+      <ul class="body-6">{% for kind, line in summary %}<li><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#{{ {'Move':'arrow-right','Drop':'x-circle','Skip lift':'barbell','Back in plan':'arrow-counter-clockwise','Change':'pencil-simple'}.get(kind, 'info') }}"/></svg><span>{{ line }}</span></li>{% endfor %}</ul>
+      {% if diff.needs_ok %}<p class="notice warn body-6"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#warning"/></svg><span>This is a big change: a key run moves 2 or more days or is dropped, it is race week, or you are sick. Check it before you apply.</span></p>{% endif %}
+    </div>
+    <div class="actions">
+      <a href="/change{{ '?d=' ~ q if q }}" class="btn">Cancel</a>
+      <button name="apply" value="1" class="btn primary"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#check"/></svg>Apply</button>
+    </div>
+  {% else %}
+    <button class="btn primary">Show before and after</button>
+  {% endif %}
+</form>
+{% endblock %}

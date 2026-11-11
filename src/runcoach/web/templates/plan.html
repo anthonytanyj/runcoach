@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Plan{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1 class="heading-4 hero-title">{{ plan.name }}</h1>
+  <p class="caption-2 muted">Goal {{ plan.race.goal }} · {{ plan.race.date.strftime('%a %-d %b %Y') }} · {{ plan.weeks|length }} weeks</p>
+</header>
+
+<details class="card" {{ 'open' if proposal }}>
+  <summary class="title-3">Did a race or a test? Update your paces</summary>
+  <form method="get" action="/plan" class="stack">
+    <input type="hidden" name="d" value="{{ q }}">
+    <div class="row">
+      <label class="field"><span class="caption-2">Distance</span>
+        <select name="km">{% for v, label in [(5, '5K'), (10, '10K'), (21.0975, 'Half marathon')] %}<option value="{{ v }}" {{ 'selected' if proposal and proposal.km == v }}>{{ label }}</option>{% endfor %}</select></label>
+      <label class="field"><span class="caption-2">Your time</span><input name="time" placeholder="26:30" value="{{ proposal.time if proposal else '' }}" required pattern="[0-9:]+"></label>
+    </div>
+    <button class="btn">See new paces</button>
+  </form>
+  {% if proposal %}
+  <div class="diff">
+    <p class="body-6">{{ proposal.text }}</p>
+    <p class="caption-5 muted">Paces from your own results · <a href="/rules#pace_from_test">How sure we are: Some studies support this</a></p>
+    {% if not proposal.same %}
+    <form method="post" action="/paces"><input type="hidden" name="km" value="{{ proposal.km }}"><input type="hidden" name="time" value="{{ proposal.time }}"><input type="hidden" name="d" value="{{ q }}">
+      <button class="btn primary">Use these paces</button></form>
+    {% endif %}
+  </div>
+  {% endif %}
+</details>
+{% for wk in weeks %}
+<details class="week {{ 'current' if wk.w.n == current }}" {{ 'open' if current is none or (wk.w.n >= current and wk.w.n <= current + 1) }}>
+  <summary>
+    <span class="what" style="display:flex;flex-direction:column;gap:var(--s-25)">
+      <span class="title-3">Week {{ wk.w.n }} · {{ wk.start.strftime('%-d %b') }}{% if wk.w.n == current %} <span class="badge caption-3">This week</span>{% endif %}</span>
+      <span class="caption-5 muted">{{ wk.summary.words }}{% if wk.w.note %} · {{ wk.w.note|capitalize }}{% endif %}</span>
+      {% if wk.summary.feel %}<span class="caption-5 muted">{{ wk.summary.feel }}</span>{% endif %}
+    </span>
+    <svg class="icon" aria-hidden="true"><use href="/static/icons.svg#caret-down"/></svg>
+  </summary>
+  <ul class="rows">
+  {% for row in wk.rows %}
+    {% if row.kind == 'run' %}{% set s = row.item %}
+    <li class="{{ s.status }}">
+      <span class="when body-6">{{ row.date.strftime('%a %-d') }}</span>
+      <span class="what">
+        <span class="main body-5">{% if s.dropped %}{{ s.session.type|capitalize }} {{ '%g' % s.session.km }} km{% else %}{{ short(s) }}{% endif %}</span>
+        {% for a in s.adjustments %}<span class="note caption-5">{{ a.reason }}</span>{% endfor %}
+      </span>
+      <span class="end caption-5">{% if s.status == 'done' %}<svg class="icon done-icon" role="img" aria-label="Done"><use href="/static/icons.svg#check-circle"/></svg>{% elif s.status == 'missed' %}Missed{% elif s.dropped %}Dropped{% else %}{{ pace(s.session.pace).km }}{% endif %}</span>
+    </li>
+    {% else %}{% set b = row.item %}
+    <li class="lift {{ 'skipped' if b.skipped_reason }}">
+      <span class="when body-6">{{ row.date.strftime('%a %-d') }}</span>
+      <span class="what"><span class="main body-6">{{ b.block.name }}</span></span>
+      <span class="end caption-5">{{ 'Skipped' if b.skipped_reason else b.block.time }}</span>
+    </li>
+    {% endif %}
+  {% endfor %}
+  </ul>
+</details>
+{% endfor %}
+{% endblock %}

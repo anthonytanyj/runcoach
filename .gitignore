@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+# Never commit personal data or secrets
+.runcoach/
+state.json
+token.json
+credentials.json
+client_secret*.json
+.env
+
+# Your own plan holds personal data; keep it local
+plans/*.local.yaml
