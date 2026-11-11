@@ -14,7 +14,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from .models import Activity, DayMetrics, LifeChange, PainReport
+from .models import Activity, DayMetrics, LifeChange, Move, PainReport
 
 
 class LogEntry(BaseModel):
@@ -34,6 +34,8 @@ class State(BaseModel):
     pains: list[PainReport] = Field(default_factory=list)
     overrides: list[str] = Field(default_factory=list)   # "YYYY-MM-DD|session key": keep the original run
     pace_factor: float = 1.0                               # 1.0 = plan paces; 0.97 = 3% faster
+    moves: dict[str, Move] = Field(default_factory=dict)   # session or block key -> change made in the calendar app
+    cal_deleted: list[str] = Field(default_factory=list)   # calendar event ids that runcoach itself deleted
 
 
 def default_path() -> Path:
@@ -68,8 +70,11 @@ class Store:
 
     def undo_last(self) -> LogEntry | None:
         for entry in reversed(self.state.log):
-            if entry.action == "change" and not entry.undone:
-                self.state.changes = [c for c in self.state.changes if c.id != entry.change_id]
+            if entry.action in ("change", "move") and not entry.undone:
+                if entry.action == "change":
+                    self.state.changes = [c for c in self.state.changes if c.id != entry.change_id]
+                else:
+                    self.state.moves.pop(entry.change_id or "", None)
                 entry.undone = True
                 self.state.log.append(
                     LogEntry(at=dt.datetime.now(dt.timezone.utc), action="undo", summary=f"Undid: {entry.summary}")
@@ -111,6 +116,22 @@ class Store:
             self.state.overrides.append(tag)
             self.state.log.append(LogEntry(at=_now(), action="override", summary=f"Kept the original run on {day:%a %-d %b}"))
             self.save()
+
+    def set_move(self, key: str, move: Move, summary: str) -> bool:
+        """Save a change the runner made in their calendar. Returns False if nothing is new."""
+        if self.state.moves.get(key) == move:
+            return False
+        self.state.moves[key] = move
+        self.state.log.append(LogEntry(at=_now(), action="move", summary=summary, change_id=key))
+        self.save()
+        return True
+
+    def clear_move(self, key: str) -> bool:
+        if self.state.moves.pop(key, None) is None:
+            return False
+        self.state.log.append(LogEntry(at=_now(), action="move_cleared", summary=f"Back to the plan: {key}"))
+        self.save()
+        return True
 
     def set_pace_factor(self, factor: float, why: str) -> None:
         self.state.pace_factor = factor

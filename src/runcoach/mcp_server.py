@@ -18,7 +18,7 @@ from mcp.server.mcpserver import MCPServer
 
 from . import calendar_out
 from .engine import Coach
-from .models import Activity, ChangeKind, DayMetrics, LifeChange, PainReport
+from .models import Activity, ChangeKind, DayMetrics, LifeChange, Move, PainReport
 from .rules import RULES
 from .render import description, one_line
 
@@ -33,9 +33,12 @@ MORNING CHECK (daily, about 6:00, or when asked "what's my run today?"):
    or an all-day event blocks a run day, call preview_change.
 3. If preview_change says needs_ok=false, call apply_change and tell the runner in
    one line. If needs_ok=true, show the before/after and ask first.
-4. Call calendar_events for the next 14 days and write them to the runner's
-   "Training" calendar (replace events with the same id), or call
-   sync_google_calendar if it is set up.
+4. Calendar, two-way. If sync_google_calendar is set up, call it: it reads the runs
+   the runner moved or deleted in the calendar and keeps their choice, then writes
+   the plan. Otherwise: read the runner's "Training" calendar first. For each runcoach
+   event (same id as in calendar_events) that is now on another day or time, call
+   calendar_moved with its key and the new date and time. Then call calendar_events
+   for the next 14 days and write them (replace events with the same id).
 5. Send one short note only if today's run changed.
 
 HOW TO TALK TO THE RUNNER: friendly, plain words, like a good coach. Never send raw
@@ -47,6 +50,10 @@ PAIN AND QUESTIONS: if a run has a question ("ask"), ask the runner how they fee
 send the answer with check_in. If the runner mentions pain, call log_pain. Never
 diagnose. Pain that changes how they run means no run, and pain that lasts several
 days means "see a physio or doctor".
+
+A run the runner moved in their calendar stays where they put it. Tell them in one
+line if the move puts two hard days next to each other. undo_last_change or
+back_to_plan puts it back.
 
 Never change the plan any other way. Illness: no running until 24 h without symptoms.
 """
@@ -228,6 +235,26 @@ def accept_paces(distance_km: float, time: str) -> dict:
 
 
 @server.tool()
+def calendar_moved(key: str, date: str | None = None, time: str | None = None, removed: bool = False) -> dict:
+    """The runner moved (or deleted) a runcoach event in their calendar app. Keep their choice.
+
+    key: the event's key from calendar_events. date: YYYY-MM-DD. time: HH:MM (optional).
+    removed: true if they deleted the event (the run is dropped; km are not made up).
+    """
+    c = _coach()
+    move = Move(date=None) if removed else Move(date=_d(date), time=time)
+    words = f"You removed {key} from your calendar." if removed else f"You moved {key} to {move.date:%a %-d %b}" + (f" at {time}." if time else ".")
+    c.store.set_move(key, move, words)
+    return {"saved": words, "today": today()}
+
+
+@server.tool()
+def back_to_plan(key: str) -> dict:
+    """Forget a calendar move for this key, so the coach places the run again."""
+    return {"cleared": _coach().store.clear_move(key)}
+
+
+@server.tool()
 def rule_book() -> dict:
     """Every rule the coach uses, with how sure we are and the source."""
     return {"rules": [{"id": r.id, "name": r.name, "why": r.why, "how_sure": r.level_text, "source": r.source} for r in RULES.values()]}
@@ -247,11 +274,15 @@ def calendar_events(start: str | None = None, days: int = 14) -> dict:
 
 @server.tool()
 def sync_google_calendar(days: int = 28) -> dict:
-    """Write the next N days to the Google calendar "Training" directly (needs Google setup, see README)."""
+    """Two-way sync with the Google calendar "Training" (needs Google setup, see README).
+
+    First reads runs the runner moved or deleted in the calendar and keeps that choice,
+    then writes the next N days. your_moves lists what it read, in plain words.
+    """
     c = _coach()
     s = dt.date.today()
     e = s + dt.timedelta(days=days - 1)
-    return calendar_out.GoogleCalendarSync().sync(calendar_out.events(c, s, e), s, e)
+    return calendar_out.GoogleCalendarSync().sync(c, s, e, s)
 
 
 @server.tool()
